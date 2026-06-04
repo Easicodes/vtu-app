@@ -1,0 +1,228 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////
+// ENUMS
+//////////////////////
+
+enum Role {
+  USER
+  RESELLER
+  ADMIN
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum TransactionType {
+  FUNDING
+  AIRTIME
+  DATA
+  ELECTRICITY
+  TV
+  EXAMPIN
+}
+
+//////////////////////
+// USER
+//////////////////////
+
+model User {
+  id        String   @id @default(cuid())
+  fullname  String
+  email     String   @unique
+  phone     String   @unique
+  password  String
+  role      Role     @default(USER)
+
+  wallet    Wallet?
+
+  transactions Transaction[]
+
+  airtimeOrders AirtimeOrder[]
+  dataOrders     DataOrder[]
+  electricityOrders ElectricityOrder[]
+  cableOrders    CableOrder[]
+  examOrders     ExamPinOrder[]
+  apiKeys        ApiKey[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////
+// WALLET
+//////////////////////
+
+model Wallet {
+  id        String   @id @default(cuid())
+  balance   Float    @default(0)
+
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+//////////////////////
+// TRANSACTIONS
+//////////////////////
+
+model Transaction {
+  id          String   @id @default(cuid())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        TransactionType
+  status      TransactionStatus @default(PENDING)
+
+  amount      Float
+  reference   String   @unique
+
+  description String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+//////////////////////
+// AIRTIME
+//////////////////////
+
+model AirtimeOrder {
+  id        String @id @default(cuid())
+
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  network   String
+  phone     String
+  amount    Float
+
+  status    TransactionStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+//////////////////////
+// DATA
+//////////////////////
+
+model DataOrder {
+  id        String @id @default(cuid())
+
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  network   String
+  planName  String
+  planCode  String
+  phone     String
+  amount    Float
+
+  status    TransactionStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+//////////////////////
+// ELECTRICITY
+//////////////////////
+
+model ElectricityOrder {
+  id          String @id @default(cuid())
+
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  disco       String
+  meterNumber String
+  token       String?
+
+  amount      Float
+
+  status      TransactionStatus @default(PENDING)
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+//////////////////////
+// CABLE TV
+//////////////////////
+
+model CableOrder {
+  id        String @id @default(cuid())
+
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider  String
+  smartCard String
+  bouquet   String
+  amount    Float
+
+  status    TransactionStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+//////////////////////
+// EXAM PINS
+//////////////////////
+
+model ExamPinOrder {
+  id        String @id @default(cuid())
+
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider  String
+  pin       String?
+  serial    String?
+
+  amount    Float
+
+  status    TransactionStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+//////////////////////
+// API KEYS
+//////////////////////
+
+model ApiKey {
+  id        String @id @default(cuid())
+
+  key       String @unique
+
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  active    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

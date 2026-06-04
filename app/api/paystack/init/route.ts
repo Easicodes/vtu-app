@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { initializeTransaction } from "@/lib/providers/paystack";
+import { initializeTransaction } from "@/lib/paystack";
 
 export async function POST(req: Request) {
   try {

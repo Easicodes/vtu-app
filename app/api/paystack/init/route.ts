@@ -1,36 +1,32 @@
-import { NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth";
-import { initializeTransaction } from "@/lib/paystack";
+const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!;
 
-export async function POST(req: Request) {
-  try {
-    const auth = req.headers.get("authorization");
-
-    if (!auth) {
-      return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
-      );
+export async function initializeTransaction({
+  email,
+  amount,
+}: {
+  email: string;
+  amount: number;
+}) {
+  const res = await fetch(
+    "https://api.paystack.co/transaction/initialize",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${PAYSTACK_SECRET}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        amount: amount * 100,
+      }),
     }
+  );
 
-    const token = auth.split(" ")[1];
-    const user: any = verifyToken(token);
+  const data = await res.json();
 
-    const { amount } = await req.json();
-
-    const paystack = await initializeTransaction({
-      email: user.email,
-      amount,
-    });
-
-    return NextResponse.json({
-      authorization_url: paystack.authorization_url,
-      reference: paystack.reference,
-    });
-  } catch (err: any) {
-    return NextResponse.json(
-      { message: err.message },
-      { status: 500 }
-    );
+  if (!res.ok) {
+    throw new Error(data.message || "Paystack init failed");
   }
+
+  return data.data;
 }

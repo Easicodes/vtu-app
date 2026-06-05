@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         balance: wallet.balance + Number(amount),
       },
     });
-
+const reference = `VTU_${Date.now()}`;
     await prisma.transaction.create({
       data: {
         userId: decoded.userId,
@@ -47,6 +47,7 @@ export async function POST(req: Request) {
         amount: Number(amount),
         status: "SUCCESS",
         description: "Mock wallet funding",
+        reference,
       },
     });
 

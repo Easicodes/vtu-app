@@ -45,7 +45,7 @@ export async function POST(req: Request) {
         userId: decoded.userId,
         type: "FUNDING",
         amount: Number(amount),
-        status: "success",
+        status: "SUCCESS",
         description: "Mock wallet funding",
       },
     });

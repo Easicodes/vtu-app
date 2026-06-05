@@ -1,32 +1,47 @@
-const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY!;
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { initializeTransaction } from "@/lib/paystack";
 
-export async function initializeTransaction({
-  email,
-  amount,
-}: {
-  email: string;
-  amount: number;
-}) {
-  const res = await fetch(
-    "https://api.paystack.co/transaction/initialize",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        amount: amount * 100,
-      }),
+export async function POST(req: Request) {
+  try {
+    const { amount, email } = await req.json();
+
+    // 1. FIND USER FIRST (IMPORTANT FIX)
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { message: "User not found" },
+        { status: 404 }
+      );
     }
-  );
 
-  const data = await res.json();
+    const reference = `VTU_${Date.now()}`;
 
-  if (!res.ok) {
-    throw new Error(data.message || "Paystack init failed");
+    const paystackRes = await initializeTransaction(
+      email,
+      amount,
+      reference
+    );
+
+    // save pending transaction
+    await prisma.transaction.create({
+  data: {
+    userId: user.id, // better than email (IMPORTANT FIX)
+    type: "FUNDING",
+    amount,
+    reference,
+    status: "PENDING",
+  },
+});
+
+    return NextResponse.json(paystackRes);
+  } catch (err: any) {
+    return NextResponse.json(
+      { message: err.message },
+      { status: 500 }
+    );
   }
-
-  return data.data;
 }

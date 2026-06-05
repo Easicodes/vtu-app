@@ -2,42 +2,46 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PlusCircle } from "lucide-react";
 
 export default function FundWalletPage() {
   const router = useRouter();
   const [amount, setAmount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
 
-  async function handleFund() {
-    if (!amount || amount < 100) {
-      alert("Minimum funding is ₦100");
+  // 🔥 FUND WALLET FUNCTION (PAYSTACK INIT)
+  async function fundWallet() {
+    if (!amount || amount <= 0) {
+      alert("Enter a valid amount");
       return;
     }
 
-    try {
-      setLoading(true);
+    setLoading(true);
 
-      // 🔥 MOCK API CALL (replace later with real backend)
-      const res = await fetch("/api/wallet/mock-fund", {
+    try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+      const res = await fetch("/api/paystack/init", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({
+          amount,
+          email: user.email,
+        }),
       });
 
       const data = await res.json();
 
-      if (!res.ok) {
-        alert(data.message || "Funding failed");
+      // 🔁 REDIRECT TO PAYSTACK
+      if (data?.data?.authorization_url) {
+        window.location.href = data.data.authorization_url;
         return;
       }
 
-      alert("🎉 Wallet funded successfully!");
-
-      router.push("/dashboard");
-
-    } catch (err) {
+      alert(data.message || "Payment initialization failed");
+    } catch (err: any) {
       console.error(err);
       alert("Something went wrong");
     } finally {
@@ -47,27 +51,41 @@ export default function FundWalletPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white p-6 rounded-2xl shadow-lg">
 
-      <div className="bg-white w-full max-w-md p-6 rounded-2xl shadow">
-
-        <h1 className="text-xl font-bold mb-4">
-          Fund Wallet (Mock)
+        <h1 className="text-xl font-bold mb-2">
+          Fund Wallet
         </h1>
 
+        <p className="text-sm text-gray-500 mb-6">
+          Enter amount to fund your VTU wallet
+        </p>
+
+        {/* AMOUNT INPUT */}
         <input
           type="number"
           placeholder="Enter amount"
           value={amount}
           onChange={(e) => setAmount(Number(e.target.value))}
-          className="w-full p-3 border rounded-xl mb-4"
+          className="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
         />
 
+        {/* FUND BUTTON */}
         <button
-          onClick={handleFund}
+          onClick={fundWallet}
           disabled={loading}
-          className="w-full bg-blue-600 text-white p-3 rounded-xl"
+          className="w-full mt-5 bg-blue-600 text-white py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition"
         >
+          <PlusCircle size={18} />
           {loading ? "Processing..." : "Fund Wallet"}
+        </button>
+
+        {/* BACK */}
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="w-full mt-3 text-sm text-gray-500"
+        >
+          Back to Dashboard
         </button>
 
       </div>

@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     await prisma.transaction.create({
       data: {
         userId: decoded.userId,
-        type: "wallet_funding",
+        type: "FUNDING",
         amount: Number(amount),
         status: "success",
         description: "Mock wallet funding",
